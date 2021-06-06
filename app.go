@@ -67,6 +67,40 @@ func CalcGaussandLapl(img *gocv.Mat, gauss *gocv.Mat, lapl *gocv.Mat) (err error
 	return nil
 }
 
+func CreatePyramid(Pyr *Pyramid, img gocv.Mat, levels int) {
+
+	*Pyr = make([]gocv.Mat, (levels + 1))
+
+	gaussian_img := gocv.NewMat()
+	defer gaussian_img.Close()
+
+	laplacian_img := gocv.NewMat()
+	defer laplacian_img.Close()
+
+	//fmt.Println(img.Size())
+	fmt.Println(len(*Pyr))
+	for j := range *Pyr {
+
+		fmt.Println("Vorgang nr: " + fmt.Sprint(j))
+
+		if j == len(*Pyr)-1 {
+			fmt.Println("letzter vorgang")
+		}
+
+		CalcGaussandLapl(&img, &gaussian_img, &laplacian_img)
+
+		if j == len(*Pyr)-1 {
+			fmt.Println("entered if")
+			laplacian_img = img.Clone()
+		} else {
+			fmt.Println("entered else")
+			img = gaussian_img.Clone()
+		}
+
+		(*Pyr)[j] = laplacian_img.Clone()
+	}
+}
+
 func main() {
 
 	vid, err := gocv.VideoCaptureFile(file)
@@ -123,39 +157,9 @@ func main() {
 			continue
 		}
 
-		TemporalPyramids[i] = make([]gocv.Mat, (levels + 1))
-
-		//fmt.Println(img.Size())
-
 		window.IMShow(img)
 
-		fmt.Println(len(TemporalPyramids[i]))
-		for j := range TemporalPyramids[i] {
-
-			fmt.Println("Vorgang nr: " + fmt.Sprint(j))
-
-			if j == len(TemporalPyramids[j])-1 {
-				fmt.Println("letzter vorgang")
-			}
-
-			CalcGaussandLapl(&img, &gaussian_img, &laplacian_img)
-
-			if j == len(TemporalPyramids[i])-1 {
-				fmt.Println("entered if")
-				laplacian_img = img.Clone()
-			} else {
-				fmt.Println("entered else")
-				img = gaussian_img.Clone()
-			}
-
-			TemporalPyramids[i][j] = laplacian_img.Clone()
-			defer TemporalPyramids[i][j].Close()
-			/*
-				gocv.PyrDown(img, &gaussian_img, image.Pt((img.Rows()+1)/2, (img.Cols()+1)/2), gocv.BorderDefault)
-				gocv.PyrUp(gaussian_img, &gaussian_img, image.Pt((gaussian_img.Rows()*2), (gaussian_img.Cols()*2)), gocv.BorderDefault)
-				gocv.Subtract(img, gaussian_img, &laplacian_img)
-			*/
-		}
+		CreatePyramid(&TemporalPyramids[i], img, levels)
 
 		window2.IMShow(TemporalPyramids[i][0])
 		window3.IMShow(TemporalPyramids[i][1])
