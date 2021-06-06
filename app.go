@@ -32,13 +32,36 @@ func InitVideoProperties(vid gocv.VideoCapture) VideoProperties {
 type Pyramid []gocv.Mat
 
 var file string = "./test-face.mp4"
-var levels int = 4
+var levels int = 3
+
+func MakePyrKernel(img gocv.Mat, up bool) image.Point {
+
+	Rows := img.Rows()
+	Cols := img.Cols()
+
+	if !up {
+		if Rows%2 == 1 {
+			Rows += 1
+		}
+		if Cols%2 == 1 {
+			Cols += 1
+		}
+	}
+
+	return image.Pt(Rows/2, Cols/2)
+
+}
 
 func CalcGaussandLapl(img *gocv.Mat, gauss *gocv.Mat, lapl *gocv.Mat) (err error) {
 	temp := img.Clone()
+
 	fmt.Println("entered function calcGaussandLapl printing shapes of img, " + fmt.Sprint(img.Size()) + ", gauss: " + fmt.Sprint(gauss.Size()) + ", lapl: " + fmt.Sprint(lapl.Size()))
-	gocv.PyrDown(*img, gauss, image.Pt((img.Rows()+1)/2, (img.Cols()+1)/2), gocv.BorderDefault)
-	gocv.PyrUp(*gauss, &temp, image.Pt((gauss.Rows()*2), (gauss.Cols()*2)), gocv.BorderDefault)
+
+	//   (img.Rows())/2, (img.Cols())/2
+
+	gocv.PyrDown(*img, gauss, MakePyrKernel(*img, false), gocv.BorderDefault)
+	gocv.PyrUp(*gauss, &temp, image.Pt(gauss.Rows()*2, gauss.Cols()*2), gocv.BorderDefault)
+	fmt.Println("went Pyr up and down shapes of img, " + fmt.Sprint(img.Size()) + ", gauss: " + fmt.Sprint(gauss.Size()) + ", lapl: " + fmt.Sprint(lapl.Size()) + ", temp: " + fmt.Sprint(temp.Size()))
 	fmt.Println("try to subtract temp, " + fmt.Sprint(temp.Size()) + ", from img: " + fmt.Sprint(img.Size()))
 	gocv.Subtract(*img, temp, lapl)
 	return nil
@@ -68,8 +91,8 @@ func main() {
 	window5 := gocv.NewWindow("5")
 	defer window2.Close()
 
-	window6 := gocv.NewWindow("6")
-	defer window2.Close()
+	//window6 := gocv.NewWindow("6")
+	//defer window2.Close()
 
 	//window7 := gocv.NewWindow("7")
 	//defer window2.Close()
@@ -138,7 +161,8 @@ func main() {
 		window3.IMShow(TemporalPyramids[i][1])
 		window4.IMShow(TemporalPyramids[i][2])
 		window5.IMShow(TemporalPyramids[i][3])
-		window6.IMShow(TemporalPyramids[i][4])
+		//window6.IMShow(img)
+
 		//fmt.Println(img.Size())
 		window.WaitKey(32)
 
