@@ -50,8 +50,18 @@ func CalcGaussandLapl(img *gocv.Mat, gauss *gocv.Mat, lapl *gocv.Mat) (err error
 
 	//fmt.Println("went Pyr up and down shapes of img, " + fmt.Sprint(img.Size()) + ", gauss: " + fmt.Sprint(gauss.Size()) + ", lapl: " + fmt.Sprint(lapl.Size()) + ", temp: " + fmt.Sprint(temp.Size()))
 	//fmt.Println("try to subtract temp, " + fmt.Sprint(temp.Size()) + ", from img: " + fmt.Sprint(img.Size()))
-	gocv.Subtract(temp, *img, lapl)
+	gocv.Subtract(*img, temp, lapl)
 	return nil
+}
+
+func ImageTo32float(img gocv.Mat) gocv.Mat {
+	img.ConvertTo(&img, gocv.MatTypeCV32FC3)
+	return img
+}
+
+func ImageTo8Int(img gocv.Mat) gocv.Mat {
+	img.ConvertTo(&img, gocv.MatTypeCV8UC3)
+	return img
 }
 
 func CreatePyramid(Pyr *Pyramid, img gocv.Mat, levels int) {

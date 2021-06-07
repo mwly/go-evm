@@ -63,6 +63,9 @@ func main() {
 	//window7 := gocv.NewWindow("7")
 	//defer window2.Close()
 
+	window_result := gocv.NewWindow("Result")
+	defer window2.Close()
+
 	img := gocv.NewMat()
 	defer img.Close()
 
@@ -92,18 +95,22 @@ func main() {
 		}
 
 		img_temp := img.Region(CroppingRect)
-		img = img_temp.Clone()
-		window.IMShow(img)
+		img = ImageTo32float(img_temp)
 
 		CreatePyramid(&TemporalPyramid[i], img, levels)
 
-		img = ReconstructImageFromPyramid(TemporalPyramid[i]).Clone()
+		Result := ReconstructImageFromPyramid(TemporalPyramid[i]).Clone()
 
-		window2.IMShow(TemporalPyramid[i][0])
-		window3.IMShow(TemporalPyramid[i][1])
-		window4.IMShow(TemporalPyramid[i][2])
-		window5.IMShow(TemporalPyramid[i][3])
-		window6.IMShow(img)
+		//Result.ConvertTo(&Result, gocv.MatTypeCV8UC3)
+
+		window2.IMShow(ImageTo8Int(TemporalPyramid[i][0]))
+		window3.IMShow(ImageTo8Int(TemporalPyramid[i][1]))
+		window4.IMShow(ImageTo8Int(TemporalPyramid[i][2]))
+		window5.IMShow(ImageTo8Int(TemporalPyramid[i][3]))
+		window6.IMShow(ImageTo8Int(TemporalPyramid[i][4]))
+		//window7.IMShow(TemporalPyramid[i][5])
+		window_result.IMShow(ImageTo8Int(Result))
+		window.IMShow(ImageTo8Int(img))
 		//fmt.Println(img.Size())
 		//fmt.Println(img.Size())
 		window.WaitKey(32)
