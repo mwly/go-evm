@@ -30,7 +30,7 @@ func InitVideoProperties(vid gocv.VideoCapture) VideoProperties {
 
 type Pyramid []gocv.Mat
 
-var file string = "./test-face.mp4"
+var file string = "test-face.mp4"
 var levels int = 4
 
 func main() {
@@ -41,6 +41,23 @@ func main() {
 		return
 	}
 	defer vid.Close()
+
+	Props := InitVideoProperties(*vid)
+
+	TemporalPyramid := make([]Pyramid, Props.fcount)
+
+	CroppingRect := GetCroppingRect(Props)
+
+	OutPut, err := gocv.VideoWriterFile(("processed_" + file), vid.CodecString(), vid.Get(gocv.VideoCaptureFPS), CroppingRect.Dx(), CroppingRect.Dy(), true)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer OutPut.Close()
+
+	OutputFrame := gocv.NewMat()
+	defer OutputFrame.Close()
 
 	window := gocv.NewWindow("Std_out")
 	defer window.Close()
@@ -76,14 +93,9 @@ func main() {
 	defer laplacian_img.Close()
 
 	//imges := []gocv.Mat
-	Props := InitVideoProperties(*vid)
 
 	fmt.Println(img.Channels())
 	fmt.Println(Props)
-
-	TemporalPyramid := make([]Pyramid, Props.fcount)
-
-	CroppingRect := GetCroppingRect(Props)
 
 	for i := 0; i < Props.fcount; i++ {
 		if ok := vid.Read(&img); !ok {
@@ -95,36 +107,42 @@ func main() {
 		}
 
 		img_temp := img.Region(CroppingRect)
-		img = ImageTo32float(img_temp)
+		img = ImageTo64float(img_temp)
 
 		CreatePyramid(&TemporalPyramid[i], img, levels)
 
-		Result := ReconstructImageFromPyramid(TemporalPyramid[i]).Clone()
+		OutputFrame = ReconstructImageFromPyramid(TemporalPyramid[i]).Clone()
+
+		OutPut.Write(ImageTo8Int(OutputFrame))
 
 		//Result.ConvertTo(&Result, gocv.MatTypeCV8UC3)
 
-		window2.IMShow(ImageTo8Int(TemporalPyramid[i][0]))
-		window3.IMShow(ImageTo8Int(TemporalPyramid[i][1]))
-		window4.IMShow(ImageTo8Int(TemporalPyramid[i][2]))
-		window5.IMShow(ImageTo8Int(TemporalPyramid[i][3]))
-		window6.IMShow(ImageTo8Int(TemporalPyramid[i][4]))
+		//fft.FFT2Real()
+
+		window2.IMShow(ImageTo8Int(TemporalPyramid[i][0].Clone()))
+		window3.IMShow(ImageTo8Int(TemporalPyramid[i][1].Clone()))
+		window4.IMShow(ImageTo8Int(TemporalPyramid[i][2].Clone()))
+		window5.IMShow(ImageTo8Int(TemporalPyramid[i][3].Clone()))
+		window6.IMShow(ImageTo8Int(TemporalPyramid[i][4].Clone()))
 		//window7.IMShow(TemporalPyramid[i][5])
-		window_result.IMShow(ImageTo8Int(Result))
-		window.IMShow(ImageTo8Int(img))
+		window_result.IMShow(ImageTo8Int(OutputFrame))
+		window.IMShow(ImageTo8Int(img.Clone()))
 		//fmt.Println(img.Size())
 		//fmt.Println(img.Size())
 		window.WaitKey(32)
 
 	}
-	/*
-		for i := range TemporalPyramids {
-			for j := range TemporalPyramids[i] {
-				fmt.Println(TemporalPyramids[i][j].Size())
+
+	for i := range TemporalPyramid {
+		for j := range TemporalPyramid[i] {
+			if TemporalPyramid[i][j].Type() != gocv.MatTypeCV64FC3 {
+				fmt.Println(TemporalPyramid[i][j].Type())
 			}
 		}
-	*/
+	}
+	//fmt.Println(TemporalPyramid[0][3].Type())
 
 	//fft.FFTReal()
 	fmt.Println(len(TemporalPyramid))
-	window.WaitKey(-1)
+	//window.WaitKey(-1)
 }

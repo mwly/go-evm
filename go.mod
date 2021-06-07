@@ -2,4 +2,7 @@ module github.com/mwly/go-evm
 
 go 1.16
 
-require gocv.io/x/gocv v0.27.0
+require (
+	github.com/mjibson/go-dsp v0.0.0-20180508042940-11479a337f12
+	gocv.io/x/gocv v0.27.0
+)

@@ -54,8 +54,8 @@ func CalcGaussandLapl(img *gocv.Mat, gauss *gocv.Mat, lapl *gocv.Mat) (err error
 	return nil
 }
 
-func ImageTo32float(img gocv.Mat) gocv.Mat {
-	img.ConvertTo(&img, gocv.MatTypeCV32FC3)
+func ImageTo64float(img gocv.Mat) gocv.Mat {
+	img.ConvertTo(&img, gocv.MatTypeCV64FC3)
 	return img
 }
 
