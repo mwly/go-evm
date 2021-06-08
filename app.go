@@ -42,9 +42,11 @@ func main() {
 
 	Props := InitVideoProperties(*vid)
 
-	TemporalPyramid := make([]Pyramid, Props.fcount)
+	Egypt := make([]Pyramid, Props.fcount)
 
 	CroppingRect := GetCroppingRect(Props)
+
+	SpaTiPyr := CreateSpaceTimePyramid(levels, Props.fcount, CroppingRect.Dx(), CroppingRect.Dy())
 
 	OutPut, err := gocv.VideoWriterFile(("processed_" + file), vid.CodecString(), vid.Get(gocv.VideoCaptureFPS), CroppingRect.Dx(), CroppingRect.Dy(), true)
 
@@ -107,9 +109,11 @@ func main() {
 		img_temp := img.Region(CroppingRect)
 		img = ImageTo64float(img_temp)
 
-		CreatePyramid(&TemporalPyramid[i], img, levels)
+		Egypt[i] = CreatePyramid(img, levels)
 
-		OutputFrame = ReconstructImageFromPyramid(TemporalPyramid[i]).Clone()
+		SpaTiPyr.AddPyramid(Egypt[i], i)
+
+		OutputFrame = ReconstructImageFromPyramid(Egypt[i]).Clone()
 
 		OutPut.Write(ImageTo8Int(OutputFrame))
 
@@ -117,11 +121,11 @@ func main() {
 
 		//fft.FFT2Real()
 
-		window2.IMShow(ImageTo8Int(TemporalPyramid[i][0].Clone()))
-		window3.IMShow(ImageTo8Int(TemporalPyramid[i][1].Clone()))
-		window4.IMShow(ImageTo8Int(TemporalPyramid[i][2].Clone()))
-		window5.IMShow(ImageTo8Int(TemporalPyramid[i][3].Clone()))
-		window6.IMShow(ImageTo8Int(TemporalPyramid[i][4].Clone()))
+		window2.IMShow(ImageTo8Int(Egypt[i][0].Clone()))
+		window3.IMShow(ImageTo8Int(Egypt[i][1].Clone()))
+		window4.IMShow(ImageTo8Int(Egypt[i][2].Clone()))
+		window5.IMShow(ImageTo8Int(Egypt[i][3].Clone()))
+		window6.IMShow(ImageTo8Int(Egypt[i][4].Clone()))
 		//window7.IMShow(TemporalPyramid[i][5])
 		window_result.IMShow(ImageTo8Int(OutputFrame))
 		window.IMShow(ImageTo8Int(img.Clone()))
@@ -131,23 +135,18 @@ func main() {
 
 	}
 
-	for i := range TemporalPyramid {
-		for j := range TemporalPyramid[i] {
-			if TemporalPyramid[i][j].Type() != gocv.MatTypeCV64FC3 {
-				fmt.Println(TemporalPyramid[i][j].Type())
+	for i := range Egypt {
+		for j := range Egypt[i] {
+			if Egypt[i][j].Type() != gocv.MatTypeCV64FC3 {
+				fmt.Println(Egypt[i][j].Type())
 				return
 			}
 		}
 	}
-
-	time_pixel := CreateTimeline(TemporalPyramid, 3, 3, 4)
-	for i := 0; i < 3; i++ {
-		fmt.Println(TemporalPyramid[3][3].GetVecdAt(100, 100)[i])
-	}
-	fmt.Println((time_pixel)[0][0])
-
+	SpaTiPyr.CreateTimelineAt(2, 2, 2)
+	fmt.Printf("chans: %v , len: %v \n", len(SpaTiPyr.GetTimelineAt(2, 2, 2)), len(SpaTiPyr.GetTimelineAt(2, 2, 2)[0]))
 	//fft.FFTReal()
-	fmt.Println(len(TemporalPyramid))
+	fmt.Println(len(Egypt))
 	window.WaitKey(-1)
 	fmt.Println("lel")
 }
