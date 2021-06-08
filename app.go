@@ -28,25 +28,6 @@ func InitVideoProperties(vid gocv.VideoCapture) VideoProperties {
 	return Props
 }
 
-type Pyramid []gocv.Mat
-
-type TimeLine struct {
-	Len    int
-	ChaNum int
-	Line   [][]float64
-}
-
-func InitATimeline(len int, chanum int) TimeLine {
-	tmp := make([]float64, len)
-	line := make([][]float64, chanum)
-	for i := range line {
-		line[i] = tmp
-	}
-
-	return TimeLine{len, chanum, line}
-
-}
-
 var file string = "subway.mp4"
 var levels int = 4
 

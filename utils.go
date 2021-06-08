@@ -106,19 +106,6 @@ func ReconstructImageFromPyramid(Pyr Pyramid) *gocv.Mat {
 	return &Result
 }
 
-func CreateTimeline(TP []Pyramid, row int, col int, level int) TimeLine {
-	res := InitATimeline(len(TP), 3)
-
-	for i, Pyr := range TP {
-
-		tmp := Pyr[level].GetVecdAt(row, col)
-		for j := range tmp {
-			res.Line[j][i] = tmp[j]
-		}
-	}
-	return res
-}
-
 func CreateImagesFromTimelines(TP [][]TimeLine) []gocv.Mat {
 
 	return nil
