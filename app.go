@@ -30,7 +30,24 @@ func InitVideoProperties(vid gocv.VideoCapture) VideoProperties {
 
 type Pyramid []gocv.Mat
 
-var file string = "test-face.mp4"
+type TimeLine struct {
+	Len    int
+	ChaNum int
+	Line   [][]float64
+}
+
+func InitATimeline(len int, chanum int) TimeLine {
+	tmp := make([]float64, len)
+	line := make([][]float64, chanum)
+	for i := range line {
+		line[i] = tmp
+	}
+
+	return TimeLine{len, chanum, line}
+
+}
+
+var file string = "subway.mp4"
 var levels int = 4
 
 func main() {
@@ -137,12 +154,19 @@ func main() {
 		for j := range TemporalPyramid[i] {
 			if TemporalPyramid[i][j].Type() != gocv.MatTypeCV64FC3 {
 				fmt.Println(TemporalPyramid[i][j].Type())
+				return
 			}
 		}
 	}
-	//fmt.Println(TemporalPyramid[0][3].Type())
+
+	time_pixel := CreateTimeline(TemporalPyramid, 3, 3, 4)
+	for i := 0; i < 3; i++ {
+		fmt.Println(TemporalPyramid[3][3].GetVecdAt(100, 100)[i])
+	}
+	fmt.Println((time_pixel)[0][0])
 
 	//fft.FFTReal()
 	fmt.Println(len(TemporalPyramid))
-	//window.WaitKey(-1)
+	window.WaitKey(-1)
+	fmt.Println("lel")
 }
