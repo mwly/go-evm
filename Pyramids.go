@@ -20,24 +20,6 @@ func InitATimeline(chanum int, len int) TimeLine {
 
 }
 
-func (STP *SpaceTimePyramid) CreateTimelineAt(row int, col int, level int) {
-
-	Pyr := &(STP.Level[level])
-	SpacePics := Pyr.SpacialPictures
-	res := InitATimeline(3, len(SpacePics))
-	for i, pic := range SpacePics {
-		tmp := pic.GetVecdAt(row, col)
-		for j := range tmp {
-			res[j][i] = tmp[j]
-		}
-	}
-	Pyr.TemporalPictures[row][col] = res
-}
-
-func (STP *SpaceTimePyramid) GetTimelineAt(row int, col int, level int) TimeLine {
-	return STP.Level[level].TemporalPictures[row][col]
-}
-
 type PyramidLevel struct {
 	SpacialPictures  []gocv.Mat
 	TemporalPictures [][]TimeLine
@@ -73,4 +55,37 @@ func (STP *SpaceTimePyramid) AddPyramid(Pyr Pyramid, PiT int) {
 	for i, p := range Pyr {
 		STP.Level[i].SpacialPictures[PiT] = p
 	}
+}
+
+func (STP *SpaceTimePyramid) CreateTimelineAt(row int, col int, level int) {
+
+	Pyr := &(STP.Level[level])
+	SpacePics := Pyr.SpacialPictures
+	res := InitATimeline(3, len(SpacePics))
+	for i, pic := range SpacePics {
+		tmp := pic.GetVecdAt(row, col)
+		for j := range tmp {
+			res[j][i] = tmp[j]
+		}
+	}
+	Pyr.TemporalPictures[row][col] = res
+}
+
+func (STP *SpaceTimePyramid) GetTimelineAt(row int, col int, level int) TimeLine {
+	return STP.Level[level].TemporalPictures[row][col]
+}
+
+func (STP *SpaceTimePyramid) Copy() SpaceTimePyramid {
+	return *STP
+}
+
+type FrequencyLine [][]complex128
+
+type FrequencyPyramid struct {
+	Levels   int
+	Rootcols int
+	Rootrows int
+	Chanum   int
+	Frame    int
+	Pyr      [][][]FrequencyLine
 }

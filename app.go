@@ -143,6 +143,7 @@ func main() {
 			}
 		}
 	}
+
 	SpaTiPyr.CreateTimelineAt(2, 2, 2)
 	fmt.Printf("chans: %v , len: %v \n", len(SpaTiPyr.GetTimelineAt(2, 2, 2)), len(SpaTiPyr.GetTimelineAt(2, 2, 2)[0]))
 	//fft.FFTReal()
