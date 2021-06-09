@@ -3,6 +3,7 @@ package main
 import (
 	"math"
 
+	"github.com/mjibson/go-dsp/fft"
 	"gocv.io/x/gocv"
 )
 
@@ -61,7 +62,7 @@ func (STP *SpaceTimePyramid) CreateTimelineAt(row int, col int, level int) {
 
 	Pyr := &(STP.Level[level])
 	SpacePics := Pyr.SpacialPictures
-	res := InitATimeline(3, len(SpacePics))
+	res := InitATimeline(SpacePics[0].Channels(), len(SpacePics))
 	for i, pic := range SpacePics {
 		tmp := pic.GetVecdAt(row, col)
 		for j := range tmp {
@@ -83,9 +84,46 @@ type FrequencyLine [][]complex128
 
 type FrequencyPyramid struct {
 	Levels   int
-	Rootcols int
 	Rootrows int
+	Rootcols int
 	Chanum   int
 	Frame    int
 	Pyr      [][][]FrequencyLine
+}
+
+func CreateFrequencyPyrFromSpaceTimePyr(STP SpaceTimePyramid) FrequencyPyramid {
+	// Create a 5D Array aka Pyramid
+	// level,pictures(rows,cols,chan,point in time)
+	level := STP.Levels
+	rows := STP.Rows
+	cols := STP.Cols
+	chanum := STP.Level[0].SpacialPictures[0].Channels()
+	frame := len(STP.Level[0].SpacialPictures)
+	FP := make([][][]FrequencyLine, level)
+	for i := range FP {
+		// iterate across the levels of the pyramid
+		thisrow := rows / int(math.Pow(float64(2), float64(i)))
+		thiscol := cols / int(math.Pow(float64(2), float64(i)))
+		Frows := make([][]FrequencyLine, thisrow)
+		for r := range Frows {
+			//iterate along the rows of the pictures
+			Fcol := make([]FrequencyLine, thiscol)
+			for c := range Fcol {
+				//iterate alon the colums of the rows
+				line := make(FrequencyLine, chanum)
+				for ch := range line {
+					//iterate along the channels of the column
+					spectrum := fft.FFTReal(STP.Level[i].TemporalPictures[r][c][ch])
+					line[ch] = spectrum
+				}
+				Fcol[c] = line
+			}
+			Frows[r] = Fcol
+		}
+		FP[i] = Frows
+
+	}
+
+	return FrequencyPyramid{level, rows, cols, chanum, frame, FP}
+
 }
