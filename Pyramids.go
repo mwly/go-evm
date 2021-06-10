@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/cmplx"
+	"sync"
 
 	"github.com/mjibson/go-dsp/fft"
 	"gocv.io/x/gocv"
@@ -123,6 +124,12 @@ type FrequencyPyramid struct {
 	Pyr      [][][]FrequencyLine
 }
 
+func DoFFTonLine(line *FrequencyLine, i int, r int, c int, ch int, STP *SpaceTimePyramid, WG *sync.WaitGroup) {
+	spectrum := fft.FFTReal((*STP).Level[i].TemporalPictures[r][c][ch])
+	(*line)[ch] = spectrum
+	(*WG).Done()
+}
+
 func CreateFrequencyPyrFromSpaceTimePyr(STP SpaceTimePyramid) FrequencyPyramid {
 	// Create a 5D Array aka Pyramid
 	// level,pictures(rows,cols,chan,point in time)
@@ -132,6 +139,7 @@ func CreateFrequencyPyrFromSpaceTimePyr(STP SpaceTimePyramid) FrequencyPyramid {
 	chanum := STP.Level[0].SpacialPictures[0].Channels()
 	frame := len(STP.Level[0].SpacialPictures)
 	FP := make([][][]FrequencyLine, level+1)
+	var WG sync.WaitGroup
 	for i := range FP {
 		// iterate across the levels of the pyramid
 		thisrow := rows / int(math.Pow(float64(2), float64(i)))
@@ -145,10 +153,11 @@ func CreateFrequencyPyrFromSpaceTimePyr(STP SpaceTimePyramid) FrequencyPyramid {
 				line := make(FrequencyLine, chanum)
 				for ch := range line {
 					//iterate along the channels of the column
+					WG.Add(1)
+					go DoFFTonLine(&line, i, r, c, ch, &STP, &WG)
 					fmt.Printf("start fft for level: %v row: %v col: %v channel: %v \n", i, r, c, ch)
-					spectrum := fft.FFTReal(STP.Level[i].TemporalPictures[r][c][ch])
-					line[ch] = spectrum
 				}
+				WG.Wait()
 				Fcol[c] = line
 			}
 			Frows[r] = Fcol
@@ -161,16 +170,20 @@ func CreateFrequencyPyrFromSpaceTimePyr(STP SpaceTimePyramid) FrequencyPyramid {
 
 func (FP *FrequencyPyramid) CreateSpaceTimePyramidfromFrequencyPyramid(STP SpaceTimePyramid) SpaceTimePyramid {
 	MYSTP := STP.Copy()
-
+	var WG sync.WaitGroup
 	for i, le := range MYSTP.Level {
 		for ro := range le.TemporalPictures {
 			for col := range le.TemporalPictures[ro] {
 				for ch := range le.TemporalPictures[ro][col] {
 					fmt.Printf("start ifft for level: %v row: %v col: %v channel: %v \n", i, ro, col, ch)
-					comp := fft.IFFT(FP.Pyr[i][ro][col][ch])
-					for x := range comp {
-						MYSTP.Level[i].TemporalPictures[ro][col][ch][x] = cmplx.Abs(comp[x])
-					}
+					WG.Add(1)
+					go func(FP *FrequencyPyramid, i int, ro int, col int, ch int, MYSTP *SpaceTimePyramid, WG *sync.WaitGroup) {
+						comp := fft.IFFT((*FP).Pyr[i][ro][col][ch])
+						for x := range comp {
+							(*MYSTP).Level[i].TemporalPictures[ro][col][ch][x] = cmplx.Abs(comp[x])
+						}
+						WG.Done()
+					}(FP, i, ro, col, ch, &MYSTP, &WG)
 				}
 			}
 
