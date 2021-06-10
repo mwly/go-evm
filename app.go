@@ -143,6 +143,40 @@ func main() {
 			}
 		}
 	}
+	fmt.Println("Egypt Proceesed starting to create timelines")
+	for i, le := range SpaTiPyr.Level {
+		for ro := range le.TemporalPictures {
+			for col := range le.TemporalPictures[ro] {
+				SpaTiPyr.CreateTimelineAt(ro, col, i)
+			}
+
+		}
+
+	}
+	fmt.Println("Timelinescreatd  Starting to reverse Timelines")
+
+	MYFP := CreateFrequencyPyrFromSpaceTimePyr(SpaTiPyr)
+
+	fmt.Println("Timelines reversed  Starting to create space time pyramid from Frequenzy pyr")
+
+	newSpaTiPyr := MYFP.CreateSpaceTimePyramidfromFrequencyPyramid(SpaTiPyr)
+
+	fmt.Println("STP creted printing to movie")
+
+	for i, le := range SpaTiPyr.Level {
+		for ro := range le.TemporalPictures {
+			for col := range le.TemporalPictures[ro] {
+				newSpaTiPyr.ReverseTimelineAt(ro, col, i)
+			}
+
+		}
+	}
+
+	FFTOutPut, err := gocv.VideoWriterFile(("FFT_processed_" + file), vid.CodecString(), vid.Get(gocv.VideoCaptureFPS), CroppingRect.Dx(), CroppingRect.Dy(), true)
+	defer FFTOutPut.Close()
+	for PiT := 0; PiT < newSpaTiPyr.Frames; PiT++ {
+		FFTOutPut.Write(ImageTo8Int(*ReconstructImageFromPyramid(newSpaTiPyr.GetPyramid(PiT))))
+	}
 
 	SpaTiPyr.CreateTimelineAt(2, 2, 2)
 	fmt.Printf("chans: %v , len: %v \n", len(SpaTiPyr.GetTimelineAt(2, 2, 2)), len(SpaTiPyr.GetTimelineAt(2, 2, 2)[0]))
