@@ -28,7 +28,7 @@ func InitVideoProperties(vid gocv.VideoCapture) VideoProperties {
 	return Props
 }
 
-var file string = "subway.mp4"
+var file string = "test-face.mp4"
 var levels int = 4
 
 func main() {
@@ -153,26 +153,36 @@ func main() {
 		}
 
 	}
-	fmt.Println("Timelinescreatd  Starting to reverse Timelines")
+	fmt.Println("Timelinescreatd  Starting wiht FFT")
 
 	MYFP := CreateFrequencyPyrFromSpaceTimePyr(SpaTiPyr)
 
-	fmt.Println("Timelines reversed  Starting to create space time pyramid from Frequenzy pyr")
+	fmt.Println("FFT completed starting with filter")
+
+	fmt.Println("filtering completed starting with ifft")
 
 	newSpaTiPyr := MYFP.CreateSpaceTimePyramidfromFrequencyPyramid(SpaTiPyr)
 
-	fmt.Println("STP creted printing to movie")
+	fmt.Println("Ifft completed Startign to reverse timelines")
 
 	for i, le := range SpaTiPyr.Level {
+		fmt.Printf("Reversing Pyramid Level %v expected number of row: %v cols: %v", i, len(le.TemporalPictures), len(le.TemporalPictures[0]))
 		for ro := range le.TemporalPictures {
 			for col := range le.TemporalPictures[ro] {
 				newSpaTiPyr.ReverseTimelineAt(ro, col, i)
+
 			}
 
 		}
 	}
+	fmt.Println("STP created printing to movie")
 
 	FFTOutPut, err := gocv.VideoWriterFile(("FFT_processed_" + file), vid.CodecString(), vid.Get(gocv.VideoCaptureFPS), CroppingRect.Dx(), CroppingRect.Dy(), true)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	defer FFTOutPut.Close()
 	for PiT := 0; PiT < newSpaTiPyr.Frames; PiT++ {
 		FFTOutPut.Write(ImageTo8Int(*ReconstructImageFromPyramid(newSpaTiPyr.GetPyramid(PiT))))
