@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 
 	"gocv.io/x/gocv"
 )
@@ -46,7 +47,7 @@ func main() {
 
 	CroppingRect := GetCroppingRect(Props)
 
-	SpaTiPyr := CreateSpaceTimePyramid(levels, Props.fcount, CroppingRect.Dx(), CroppingRect.Dy())
+	SpaTiPyr := CreateTimePyramid(levels, Props.fcount, CroppingRect.Dx(), CroppingRect.Dy())
 
 	OutPut, err := gocv.VideoWriterFile(("processed_" + file), vid.CodecString(), vid.Get(gocv.VideoCaptureFPS), CroppingRect.Dx(), CroppingRect.Dy(), true)
 
@@ -135,46 +136,22 @@ func main() {
 
 	}
 
-	for i := range Egypt {
-		for j := range Egypt[i] {
-			if Egypt[i][j].Type() != gocv.MatTypeCV64FC3 {
-				fmt.Println(Egypt[i][j].Type())
-				return
+	fil := Filter{}
+
+	newTiPyr := SpaTiPyr.Copy()
+
+	var WG sync.WaitGroup
+
+	for level, levels := range newTiPyr.Level {
+		for row := 0; row < levels.SpacialPictures[0].Rows(); row++ {
+			for col := 0; col < levels.SpacialPictures[0].Cols(); col++ {
+				WG.Add(1)
+				go newTiPyr.FilterAt(row, col, level, fil, levels.SpacialPictures[0].Channels(), &WG)
 			}
 		}
 	}
-	fmt.Println("Egypt Proceesed starting to create timelines")
-	for i, le := range SpaTiPyr.Level {
-		for ro := range le.TemporalPictures {
-			for col := range le.TemporalPictures[ro] {
-				SpaTiPyr.CreateTimelineAt(ro, col, i)
-			}
+	WG.Wait()
 
-		}
-
-	}
-	fmt.Println("Timelinescreatd  Starting wiht FFT")
-
-	MYFP := CreateFrequencyPyrFromSpaceTimePyr(SpaTiPyr)
-
-	fmt.Println("FFT completed starting with filter")
-
-	fmt.Println("filtering completed starting with ifft")
-
-	newSpaTiPyr := MYFP.CreateSpaceTimePyramidfromFrequencyPyramid(SpaTiPyr)
-
-	fmt.Println("Ifft completed Startign to reverse timelines")
-
-	for i, le := range SpaTiPyr.Level {
-		fmt.Printf("Reversing Pyramid Level %v expected number of row: %v cols: %v", i, len(le.TemporalPictures), len(le.TemporalPictures[0]))
-		for ro := range le.TemporalPictures {
-			for col := range le.TemporalPictures[ro] {
-				newSpaTiPyr.ReverseTimelineAt(ro, col, i)
-
-			}
-
-		}
-	}
 	fmt.Println("STP created printing to movie")
 
 	FFTOutPut, err := gocv.VideoWriterFile(("FFT_processed_" + file), vid.CodecString(), vid.Get(gocv.VideoCaptureFPS), CroppingRect.Dx(), CroppingRect.Dy(), true)
@@ -184,13 +161,10 @@ func main() {
 	}
 
 	defer FFTOutPut.Close()
-	for PiT := 0; PiT < newSpaTiPyr.Frames; PiT++ {
-		FFTOutPut.Write(ImageTo8Int(*ReconstructImageFromPyramid(newSpaTiPyr.GetPyramid(PiT))))
+	for PiT := 0; PiT < newTiPyr.Frames; PiT++ {
+		FFTOutPut.Write(ImageTo8Int(*ReconstructImageFromPyramid(newTiPyr.GetPyramid(PiT))))
 	}
 
-	SpaTiPyr.CreateTimelineAt(2, 2, 2)
-	fmt.Printf("chans: %v , len: %v \n", len(SpaTiPyr.GetTimelineAt(2, 2, 2)), len(SpaTiPyr.GetTimelineAt(2, 2, 2)[0]))
-	//fft.FFTReal()
 	fmt.Println(len(Egypt))
 	window.WaitKey(-1)
 	fmt.Println("lel")
