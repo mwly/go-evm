@@ -29,7 +29,7 @@ func InitVideoProperties(vid gocv.VideoCapture) VideoProperties {
 	return Props
 }
 
-var file string = "test-face.mp4"
+var file string = "subway.mp4"
 var levels int = 4
 
 func main() {
@@ -47,7 +47,7 @@ func main() {
 
 	CroppingRect := GetCroppingRect(Props)
 
-	SpaTiPyr := CreateTimePyramid(levels, Props.fcount, CroppingRect.Dx(), CroppingRect.Dy())
+	SpaTiPyr := CreateTimePyramid(levels, Props.fcount, CroppingRect.Dy(), CroppingRect.Dx())
 
 	OutPut, err := gocv.VideoWriterFile(("processed_" + file), vid.CodecString(), vid.Get(gocv.VideoCaptureFPS), CroppingRect.Dx(), CroppingRect.Dy(), true)
 
@@ -142,14 +142,43 @@ func main() {
 
 	var WG sync.WaitGroup
 
+	numworkers := 5
+
+	ch := make(chan RoomInPyr, (2)*newTiPyr.RootRows*newTiPyr.RootCols)
+	fmt.Printf("made channel with len %v \n", 2*newTiPyr.RootRows*newTiPyr.RootCols)
+
+	for z := 0; z < numworkers; z++ {
+		WG.Add(1)
+
+		fmt.Printf("Create worker number: %v ", z)
+		go func(WG *sync.WaitGroup) {
+			for Room := range ch {
+				newTiPyr.FilterAt(Room.row, Room.col, Room.level, Room.fil, Room.chanum)
+			}
+			WG.Done()
+		}(&WG)
+	}
+	WG.Add(1)
+	go func(WG *sync.WaitGroup) {
+		i := 0
+
+		for Room := range ch {
+			fmt.Printf("\rworker 11 did his %v task", i)
+			newTiPyr.FilterAt(Room.row, Room.col, Room.level, Room.fil, Room.chanum)
+			i += 1
+		}
+		fmt.Printf("\n")
+		WG.Done()
+	}(&WG)
+
 	for level, levels := range newTiPyr.Level {
 		for row := 0; row < levels.SpacialPictures[0].Rows(); row++ {
 			for col := 0; col < levels.SpacialPictures[0].Cols(); col++ {
-				WG.Add(1)
-				go newTiPyr.FilterAt(row, col, level, fil, levels.SpacialPictures[0].Channels(), &WG)
+				ch <- RoomInPyr{row, col, level, fil, levels.SpacialPictures[0].Channels()}
 			}
 		}
 	}
+	close(ch)
 	WG.Wait()
 
 	fmt.Println("STP created printing to movie")

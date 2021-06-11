@@ -1,8 +1,6 @@
 package main
 
 import (
-	"sync"
-
 	"github.com/mjibson/go-dsp/fft"
 )
 
@@ -30,37 +28,31 @@ type FrequencyPyramid struct {
 }
 
 func (TL *TimeLine) CreateFrequencyLine(chanum int) FrequencyLine {
-	var WG sync.WaitGroup
+
 	line := make(FrequencyLine, chanum)
 	for ch := range line {
 		//iterate along the channels of the column
-		WG.Add(1)
-		go DoFFTonLine(&line, ch, TL, &WG)
+
+		DoFFTonLine(&line, ch, TL)
 	}
-	WG.Wait()
 	return line
 }
 
-func DoFFTonLine(line *FrequencyLine, ch int, TL *TimeLine, WG *sync.WaitGroup) {
+func DoFFTonLine(line *FrequencyLine, ch int, TL *TimeLine) {
 	spectrum := fft.FFTReal((*TL)[ch])
 	(*line)[ch] = spectrum
-	(*WG).Done()
 }
 
 func (FL *FrequencyLine) CreateTimeline(chanum int) TimeLine {
-	var WG sync.WaitGroup
 	TL := make(TimeLine, chanum)
 	for ch := range *FL {
-		WG.Add(1)
-		go func(FL *FrequencyLine, ch int, TL *TimeLine, WG *sync.WaitGroup) {
+		func(FL *FrequencyLine, ch int, TL *TimeLine) {
 
 			comp := fft.IFFT((*FL)[ch])
 
 			(*TL)[ch] = ReconComplexSignal(comp)
-			WG.Done()
-		}(FL, ch, &TL, &WG)
+		}(FL, ch, &TL)
 	}
-	WG.Wait()
 	return TL
 }
 
@@ -80,8 +72,18 @@ type Filter struct {
 	fend    int
 }
 
-func CreateFilter(fsamp int)
+func CreateFilter(fsamp int) {
+
+}
 
 func (F *Filter) ApplyToCompl128(pArr *FrequencyLine) {
 
+}
+
+type RoomInPyr struct {
+	row    int
+	col    int
+	level  int
+	fil    Filter
+	chanum int
 }
