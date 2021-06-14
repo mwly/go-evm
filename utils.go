@@ -101,8 +101,10 @@ func ReconstructImageFromPyramid(Pyr Pyramid) *gocv.Mat {
 
 	for i := len(Pyr) - 2; i >= 0; i-- {
 		gocv.PyrUp(Result, &Result, image.Pt(Result.Rows()*2, Result.Cols()*2), gocv.BorderDefault)
+		//fmt.Println("Try to add Pyr with shape (" + fmt.Sprint(Pyr[i].Size()) + ") and Result with shape (" + fmt.Sprint(Result.Size()) + ")")
+		//fmt.Println("Try to add Pyr with type (" + fmt.Sprint(Pyr[i].Type().String()) + ") and Result with shape (" + fmt.Sprint(Result.Type().String()) + ")")
+		//fmt.Println("Try to add Pyr with channels (" + fmt.Sprint(Pyr[i].Channels()) + ") and Result with shape (" + fmt.Sprint(Result.Channels()) + ")")
 		gocv.Add(Result, Pyr[i], &Result)
-		//fmt.Println("Added Pyr with shape (" + fmt.Sprint(Result.Size()) + ") and Result with shape (" + fmt.Sprint(Result.Size()) + ")")
 	}
 	return &Result
 }

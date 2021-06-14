@@ -47,7 +47,7 @@ func main() {
 
 	CroppingRect := GetCroppingRect(Props)
 
-	SpaTiPyr := CreateTimePyramid(levels, Props.fcount, CroppingRect.Dy(), CroppingRect.Dx())
+	SpaTiPyr := CreateTimePyramid(levels, Props.fcount, CroppingRect.Dy(), CroppingRect.Dx(), 3)
 
 	OutPut, err := gocv.VideoWriterFile(("processed_" + file), vid.CodecString(), vid.Get(gocv.VideoCaptureFPS), CroppingRect.Dx(), CroppingRect.Dy(), true)
 
@@ -116,6 +116,10 @@ func main() {
 
 		OutputFrame = ReconstructImageFromPyramid(Egypt[i]).Clone()
 
+		BGR := gocv.Split(OutputFrame)
+
+		gocv.Merge(BGR, &OutputFrame)
+
 		OutPut.Write(ImageTo8Int(OutputFrame))
 
 		//Result.ConvertTo(&Result, gocv.MatTypeCV8UC3)
@@ -147,13 +151,17 @@ func main() {
 	ch := make(chan RoomInPyr, (2)*newTiPyr.RootRows*newTiPyr.RootCols)
 	fmt.Printf("made channel with len %v \n", 2*newTiPyr.RootRows*newTiPyr.RootCols)
 
+	newTiPyr.RGB2Gray()
+
+	newTiPyr.PrintShape()
+
 	for z := 0; z < numworkers; z++ {
 		WG.Add(1)
 
-		fmt.Printf("Create worker number: %v ", z)
+		fmt.Printf("Create worker number: %v \n", z)
 		go func(WG *sync.WaitGroup) {
 			for Room := range ch {
-				newTiPyr.FilterAt(Room.row, Room.col, Room.level, Room.fil, Room.chanum)
+				newTiPyr.FilterGrayAt(Room.row, Room.col, Room.level, Room.fil, Room.chanum)
 			}
 			WG.Done()
 		}(&WG)
@@ -164,7 +172,7 @@ func main() {
 
 		for Room := range ch {
 			fmt.Printf("\rworker 11 did his %v task", i)
-			newTiPyr.FilterAt(Room.row, Room.col, Room.level, Room.fil, Room.chanum)
+			newTiPyr.FilterGrayAt(Room.row, Room.col, Room.level, Room.fil, Room.chanum)
 			i += 1
 		}
 		fmt.Printf("\n")
@@ -172,16 +180,18 @@ func main() {
 	}(&WG)
 
 	for level, levels := range newTiPyr.Level {
+
 		for row := 0; row < levels.SpacialPictures[0].Rows(); row++ {
 			for col := 0; col < levels.SpacialPictures[0].Cols(); col++ {
-				ch <- RoomInPyr{row, col, level, fil, levels.SpacialPictures[0].Channels()}
+				ch <- RoomInPyr{row, col, level, fil, 3}
 			}
 		}
 	}
 	close(ch)
 	WG.Wait()
-
+	newTiPyr.Gray2RGB()
 	fmt.Println("STP created printing to movie")
+	newTiPyr.PrintShape()
 
 	FFTOutPut, err := gocv.VideoWriterFile(("FFT_processed_" + file), vid.CodecString(), vid.Get(gocv.VideoCaptureFPS), CroppingRect.Dx(), CroppingRect.Dy(), true)
 	if err != nil {
@@ -191,10 +201,24 @@ func main() {
 
 	defer FFTOutPut.Close()
 	for PiT := 0; PiT < newTiPyr.Frames; PiT++ {
-		FFTOutPut.Write(ImageTo8Int(*ReconstructImageFromPyramid(newTiPyr.GetPyramid(PiT))))
-	}
+		Pyr := newTiPyr.GetPyramid(PiT)
+		RecImg := ReconstructImageFromPyramid(Pyr)
+		IntImg := ImageTo8Int(*RecImg)
+		//gocv.CvtColor(IntImg, &IntImg, gocv.ColorGrayToBGR)
 
-	fmt.Println(len(Egypt))
+		FFTOutPut.Write((IntImg))
+
+		BGR := gocv.Split(IntImg)
+
+		window.IMShow(IntImg)
+		window2.IMShow(BGR[0])
+		window3.IMShow(BGR[1])
+		window4.IMShow(BGR[2])
+		window.WaitKey(32)
+
+		//FFTOutPut.Write(ImageTo8Int(*ReconstructImageFromPyramid(newTiPyr.GetPyramid(PiT))))
+	}
 	window.WaitKey(-1)
+	fmt.Println(len(Egypt))
 	fmt.Println("lel")
 }

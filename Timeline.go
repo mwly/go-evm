@@ -8,8 +8,8 @@ type TimeLine [][]float64
 
 func InitATimeline(chanum int, len int) TimeLine {
 	line := make([][]float64, chanum)
-	colorSpace := make([]float64, len)
 	for i := range line {
+		colorSpace := make([]float64, len)
 		line[i] = colorSpace
 	}
 	return line
@@ -17,15 +17,6 @@ func InitATimeline(chanum int, len int) TimeLine {
 }
 
 type FrequencyLine [][]complex128
-
-type FrequencyPyramid struct {
-	Levels   int
-	Rootrows int
-	Rootcols int
-	Chanum   int
-	Frame    int
-	Pyr      [][][]FrequencyLine
-}
 
 func (TL *TimeLine) CreateFrequencyLine(chanum int) FrequencyLine {
 
