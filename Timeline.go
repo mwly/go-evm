@@ -64,9 +64,10 @@ type Filter struct {
 	fend     float64
 	Nmin     int
 	LevelMin int
+	RGBamp   []float64
 }
 
-func CreateFilter(fsamp int, fstart float64, fend float64, LevelMin int) (Filter, error) {
+func CreateFilter(fsamp int, fstart float64, fend float64, LevelMin int, RGBamp []float64) (Filter, error) {
 	fnyq := float64(fsamp) / 2
 	if fend < 0 && fstart < 0 {
 		return Filter{}, errors.New("filter creation: start or end frequenzy isnt positive")
@@ -80,7 +81,7 @@ func CreateFilter(fsamp int, fstart float64, fend float64, LevelMin int) (Filter
 	//I define hereby to oversample with atleast factor 2 therefore the equation for the minimal amount of Samples is
 	Nmin := (fsamp * 2)
 
-	return Filter{fsamp, fnyq, fstart, fend, Nmin, LevelMin}, nil
+	return Filter{fsamp, fnyq, fstart, fend, Nmin, LevelMin, RGBamp}, nil
 }
 
 func (F *Filter) ApplyToCompl128(pArr *FrequencyLine) {
@@ -91,7 +92,7 @@ func (F *Filter) ApplyToCompl128(pArr *FrequencyLine) {
 	df := float64(F.fsamp) / float64(len((*pArr)[0]))
 	Nstart := int(F.fstart / df)
 	Nend := int(F.fend/df) + 1
-	amp := []float64{float64(0), float64(0), float64(80)}
+	amp := F.RGBamp
 	for n := range (*pArr)[0] {
 		if n < Nstart || n > Nend {
 			//for ch := range *pArr {

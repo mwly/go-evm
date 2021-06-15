@@ -140,7 +140,8 @@ func main() {
 
 	}
 
-	fil, err := CreateFilter(Props.fps, 0.83, 1, 3)
+	BGRamp := []float64{float64(0), float64(0), float64(80)}
+	fil, err := CreateFilter(Props.fps, 0.83, 1, 3, BGRamp)
 	if err != nil {
 		fmt.Println(err)
 		return
