@@ -29,8 +29,8 @@ func InitVideoProperties(vid gocv.VideoCapture) VideoProperties {
 	return Props
 }
 
-var file string = "subway.mp4"
-var levels int = 4
+var file string = "test-face.mp4"
+var levels int = 6
 
 func main() {
 
@@ -140,7 +140,11 @@ func main() {
 
 	}
 
-	fil := Filter{}
+	fil, err := CreateFilter(Props.fps, 0.83, 1, 3)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	newTiPyr := SpaTiPyr.Copy()
 
@@ -218,7 +222,7 @@ func main() {
 
 		//FFTOutPut.Write(ImageTo8Int(*ReconstructImageFromPyramid(newTiPyr.GetPyramid(PiT))))
 	}
-	window.WaitKey(-1)
+	//window.WaitKey(-1)
 	fmt.Println(len(Egypt))
 	fmt.Println("lel")
 }
