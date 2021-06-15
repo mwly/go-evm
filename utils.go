@@ -64,9 +64,9 @@ func ImageTo8Int(img gocv.Mat) gocv.Mat {
 	return img
 }
 
-func CreatePyramid(Pyr *Pyramid, img gocv.Mat, levels int) {
+func CreatePyramid(img gocv.Mat, levels int) Pyramid {
 
-	*Pyr = make([]gocv.Mat, (levels + 1))
+	Pyr := make([]gocv.Mat, (levels + 1))
 
 	gaussian_img := gocv.NewMat()
 	defer gaussian_img.Close()
@@ -77,13 +77,13 @@ func CreatePyramid(Pyr *Pyramid, img gocv.Mat, levels int) {
 	//fmt.Println(img.Size())
 	//fmt.Println(len(*Pyr))
 
-	for j := range *Pyr {
+	for j := range Pyr {
 
 		//fmt.Println("Vorgang nr: " + fmt.Sprint(j))
 
 		CalcGaussandLapl(&img, &gaussian_img, &laplacian_img)
 
-		if j == len(*Pyr)-1 {
+		if j == len(Pyr)-1 {
 			//fmt.Println("entered if")
 			laplacian_img = img.Clone()
 		} else {
@@ -91,8 +91,9 @@ func CreatePyramid(Pyr *Pyramid, img gocv.Mat, levels int) {
 			img = gaussian_img.Clone()
 		}
 
-		(*Pyr)[j] = laplacian_img.Clone()
+		(Pyr)[j] = laplacian_img.Clone()
 	}
+	return Pyr
 }
 
 func ReconstructImageFromPyramid(Pyr Pyramid) *gocv.Mat {
@@ -100,8 +101,15 @@ func ReconstructImageFromPyramid(Pyr Pyramid) *gocv.Mat {
 
 	for i := len(Pyr) - 2; i >= 0; i-- {
 		gocv.PyrUp(Result, &Result, image.Pt(Result.Rows()*2, Result.Cols()*2), gocv.BorderDefault)
+		//fmt.Println("Try to add Pyr with shape (" + fmt.Sprint(Pyr[i].Size()) + ") and Result with shape (" + fmt.Sprint(Result.Size()) + ")")
+		//fmt.Println("Try to add Pyr with type (" + fmt.Sprint(Pyr[i].Type().String()) + ") and Result with shape (" + fmt.Sprint(Result.Type().String()) + ")")
+		//fmt.Println("Try to add Pyr with channels (" + fmt.Sprint(Pyr[i].Channels()) + ") and Result with shape (" + fmt.Sprint(Result.Channels()) + ")")
 		gocv.Add(Result, Pyr[i], &Result)
-		//fmt.Println("Added Pyr with shape (" + fmt.Sprint(Result.Size()) + ") and Result with shape (" + fmt.Sprint(Result.Size()) + ")")
 	}
 	return &Result
+}
+
+func CreateImagesFromTimelines(TP [][]TimeLine) []gocv.Mat {
+
+	return nil
 }

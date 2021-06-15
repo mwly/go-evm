@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 
 	"gocv.io/x/gocv"
 )
@@ -28,9 +29,7 @@ func InitVideoProperties(vid gocv.VideoCapture) VideoProperties {
 	return Props
 }
 
-type Pyramid []gocv.Mat
-
-var file string = "test-face.mp4"
+var file string = "subway.mp4"
 var levels int = 4
 
 func main() {
@@ -44,9 +43,11 @@ func main() {
 
 	Props := InitVideoProperties(*vid)
 
-	TemporalPyramid := make([]Pyramid, Props.fcount)
+	Egypt := make([]Pyramid, Props.fcount)
 
 	CroppingRect := GetCroppingRect(Props)
+
+	SpaTiPyr := CreateTimePyramid(levels, Props.fcount, CroppingRect.Dy(), CroppingRect.Dx(), 3)
 
 	OutPut, err := gocv.VideoWriterFile(("processed_" + file), vid.CodecString(), vid.Get(gocv.VideoCaptureFPS), CroppingRect.Dx(), CroppingRect.Dy(), true)
 
@@ -109,9 +110,15 @@ func main() {
 		img_temp := img.Region(CroppingRect)
 		img = ImageTo64float(img_temp)
 
-		CreatePyramid(&TemporalPyramid[i], img, levels)
+		Egypt[i] = CreatePyramid(img, levels)
 
-		OutputFrame = ReconstructImageFromPyramid(TemporalPyramid[i]).Clone()
+		SpaTiPyr.AddPyramid(Egypt[i], i)
+
+		OutputFrame = ReconstructImageFromPyramid(Egypt[i]).Clone()
+
+		BGR := gocv.Split(OutputFrame)
+
+		gocv.Merge(BGR, &OutputFrame)
 
 		OutPut.Write(ImageTo8Int(OutputFrame))
 
@@ -119,11 +126,11 @@ func main() {
 
 		//fft.FFT2Real()
 
-		window2.IMShow(ImageTo8Int(TemporalPyramid[i][0].Clone()))
-		window3.IMShow(ImageTo8Int(TemporalPyramid[i][1].Clone()))
-		window4.IMShow(ImageTo8Int(TemporalPyramid[i][2].Clone()))
-		window5.IMShow(ImageTo8Int(TemporalPyramid[i][3].Clone()))
-		window6.IMShow(ImageTo8Int(TemporalPyramid[i][4].Clone()))
+		window2.IMShow(ImageTo8Int(Egypt[i][0].Clone()))
+		window3.IMShow(ImageTo8Int(Egypt[i][1].Clone()))
+		window4.IMShow(ImageTo8Int(Egypt[i][2].Clone()))
+		window5.IMShow(ImageTo8Int(Egypt[i][3].Clone()))
+		window6.IMShow(ImageTo8Int(Egypt[i][4].Clone()))
 		//window7.IMShow(TemporalPyramid[i][5])
 		window_result.IMShow(ImageTo8Int(OutputFrame))
 		window.IMShow(ImageTo8Int(img.Clone()))
@@ -133,16 +140,85 @@ func main() {
 
 	}
 
-	for i := range TemporalPyramid {
-		for j := range TemporalPyramid[i] {
-			if TemporalPyramid[i][j].Type() != gocv.MatTypeCV64FC3 {
-				fmt.Println(TemporalPyramid[i][j].Type())
+	fil := Filter{}
+
+	newTiPyr := SpaTiPyr.Copy()
+
+	var WG sync.WaitGroup
+
+	numworkers := 5
+
+	ch := make(chan RoomInPyr, (2)*newTiPyr.RootRows*newTiPyr.RootCols)
+	fmt.Printf("made channel with len %v \n", 2*newTiPyr.RootRows*newTiPyr.RootCols)
+
+	newTiPyr.RGB2Gray()
+
+	newTiPyr.PrintShape()
+
+	for z := 0; z < numworkers; z++ {
+		WG.Add(1)
+
+		fmt.Printf("Create worker number: %v \n", z)
+		go func(WG *sync.WaitGroup) {
+			for Room := range ch {
+				newTiPyr.FilterGrayAt(Room.row, Room.col, Room.level, Room.fil, Room.chanum)
+			}
+			WG.Done()
+		}(&WG)
+	}
+	WG.Add(1)
+	go func(WG *sync.WaitGroup) {
+		i := 0
+
+		for Room := range ch {
+			fmt.Printf("\rworker 11 did his %v task", i)
+			newTiPyr.FilterGrayAt(Room.row, Room.col, Room.level, Room.fil, Room.chanum)
+			i += 1
+		}
+		fmt.Printf("\n")
+		WG.Done()
+	}(&WG)
+
+	for level, levels := range newTiPyr.Level {
+
+		for row := 0; row < levels.SpacialPictures[0].Rows(); row++ {
+			for col := 0; col < levels.SpacialPictures[0].Cols(); col++ {
+				ch <- RoomInPyr{row, col, level, fil, 3}
 			}
 		}
 	}
-	//fmt.Println(TemporalPyramid[0][3].Type())
+	close(ch)
+	WG.Wait()
+	newTiPyr.Gray2RGB()
+	fmt.Println("STP created printing to movie")
+	newTiPyr.PrintShape()
 
-	//fft.FFTReal()
-	fmt.Println(len(TemporalPyramid))
-	//window.WaitKey(-1)
+	FFTOutPut, err := gocv.VideoWriterFile(("FFT_processed_" + file), vid.CodecString(), vid.Get(gocv.VideoCaptureFPS), CroppingRect.Dx(), CroppingRect.Dy(), true)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	defer FFTOutPut.Close()
+	for PiT := 0; PiT < newTiPyr.Frames; PiT++ {
+		Pyr := newTiPyr.GetPyramid(PiT)
+		RecImg := ReconstructImageFromPyramid(Pyr)
+		IntImg := ImageTo8Int(*RecImg)
+		//gocv.CvtColor(IntImg, &IntImg, gocv.ColorGrayToBGR)
+
+		FFTOutPut.Write((IntImg))
+
+		BGR := gocv.Split(IntImg)
+
+		window.IMShow(IntImg)
+		window2.IMShow(BGR[0])
+		window3.IMShow(BGR[1])
+		window4.IMShow(BGR[2])
+		window.WaitKey(32)
+
+		//FFTOutPut.Write(ImageTo8Int(*ReconstructImageFromPyramid(newTiPyr.GetPyramid(PiT))))
+	}
+	window.WaitKey(-1)
+	fmt.Println(len(Egypt))
+	fmt.Println("lel")
 }
