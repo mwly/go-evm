@@ -131,7 +131,9 @@ func (STP *TimePyramid) FilterRGBAt(row int, col int, level int, fil Filter, cha
 func (STP *TimePyramid) FilterGrayAt(row int, col int, level int, fil Filter, chanum int) {
 	TL := STP.CreateTimelineFromGray(row, col, level, chanum)
 	FL := TL.CreateFrequencyLine(chanum)
-	fil.ApplyToCompl128(&FL)
+	if level > fil.LevelMin {
+		fil.ApplyToCompl128(&FL)
+	}
 	TL = FL.CreateTimeline(chanum)
 	STP.InsertTimelineAtGray(row, col, level, &TL)
 }

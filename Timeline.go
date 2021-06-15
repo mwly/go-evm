@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+
 	"github.com/mjibson/go-dsp/fft"
 )
 
@@ -56,18 +58,52 @@ func ReconComplexSignal(idft []complex128) []float64 {
 }
 
 type Filter struct {
-	fsamp   int
-	fnyq    int
-	numsamp int
-	fstart  int
-	fend    int
+	fsamp    int
+	fnyq     float64
+	fstart   float64
+	fend     float64
+	Nmin     int
+	LevelMin int
+	RGBamp   []float64
 }
 
-func CreateFilter(fsamp int) {
+func CreateFilter(fsamp int, fstart float64, fend float64, LevelMin int, RGBamp []float64) (Filter, error) {
+	fnyq := float64(fsamp) / 2
+	if fend < 0 && fstart < 0 {
+		return Filter{}, errors.New("filter creation: start or end frequenzy isnt positive")
+	}
+	if fstart > fend {
+		return Filter{}, errors.New("filter creation: start frequenzy higher than end frequency")
+	}
+	if fend > fnyq {
+		return Filter{}, errors.New("filter creation: end frequenzy higher than nyquist frequency")
+	}
+	//I define hereby to oversample with atleast factor 2 therefore the equation for the minimal amount of Samples is
+	Nmin := (fsamp * 2)
 
+	return Filter{fsamp, fnyq, fstart, fend, Nmin, LevelMin, RGBamp}, nil
 }
 
 func (F *Filter) ApplyToCompl128(pArr *FrequencyLine) {
+	//fmt.Printf("Apply Filter to complex signal with length %v \n", len((*pArr)[0]))
+	if F.Nmin > len((*pArr)[0]) {
+		panic("Number of samples is to small for this Filter")
+	}
+	df := float64(F.fsamp) / float64(len((*pArr)[0]))
+	Nstart := int(F.fstart / df)
+	Nend := int(F.fend/df) + 1
+	amp := F.RGBamp
+	for n := range (*pArr)[0] {
+		if n < Nstart || n > Nend {
+			//for ch := range *pArr {
+			//(*pArr)[ch][n] = 0 + 0i
+			//}
+		} else {
+			for ch := range *pArr {
+				(*pArr)[ch][n] += complex(amp[ch]*real((*pArr)[ch][n]), amp[ch]*imag((*pArr)[ch][n]))
+			}
+		}
+	}
 
 }
 
