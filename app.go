@@ -29,7 +29,7 @@ func InitVideoProperties(vid gocv.VideoCapture) VideoProperties {
 	return Props
 }
 
-var file string = "test-face.mp4"
+var file string = "moritz1.mp4"
 var levels int = 6
 
 func main() {
@@ -140,8 +140,8 @@ func main() {
 
 	}
 
-	BGRamp := []float64{float64(0), float64(0), float64(80)}
-	fil, err := CreateFilter(Props.fps, 0.83, 1, 3, BGRamp)
+	BGRamp := []float64{float64(25), float64(25), float64(80)}
+	fil, err := CreateFilter(Props.fps, 0.83, 1.1, 1, BGRamp)
 	if err != nil {
 		fmt.Println(err)
 		return
