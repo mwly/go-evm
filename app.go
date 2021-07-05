@@ -140,8 +140,9 @@ func main() {
 
 	}
 
-	BGRamp := []float64{float64(25), float64(25), float64(80)}
-	fil, err := CreateFilter(Props.fps, 0.83, 1.1, 1, BGRamp)
+	BGRamp := []float64{float64(-10), float64(-10), float64(80)}
+	fil, err := CreateFilter(Props.fps, 0.9, 1.2, 2, BGRamp)
+
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -176,7 +177,7 @@ func main() {
 		i := 0
 
 		for Room := range ch {
-			fmt.Printf("\rworker 11 did his %v task", i)
+			fmt.Printf("\rworker %v did his %v task", numworkers+1, i)
 			newTiPyr.FilterGrayAt(Room.row, Room.col, Room.level, Room.fil, Room.chanum)
 			i += 1
 		}

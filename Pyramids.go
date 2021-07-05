@@ -14,6 +14,8 @@ type PyramidLevel struct {
 }
 
 type TimePyramid struct {
+	//nicht vergessen typ-orientierung zu erwähnen
+
 	Levels   int
 	Frames   int
 	RootRows int

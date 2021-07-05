@@ -85,14 +85,15 @@ func CreateFilter(fsamp int, fstart float64, fend float64, LevelMin int, BGRamp 
 }
 
 func (F *Filter) ApplyToCompl128(pArr *FrequencyLine) {
-	//fmt.Printf("Apply Filter to complex signal with length %v \n", len((*pArr)[0]))
 	if F.Nmin > len((*pArr)[0]) {
 		panic("Number of samples is to small for this Filter")
 	}
+
 	df := float64(F.fsamp) / float64(len((*pArr)[0]))
 	Nstart := int(F.fstart / df)
 	Nend := int(F.fend/df) + 1
 	amp := F.BGRamp
+
 	for n := range (*pArr)[0] {
 		if n < Nstart || n > Nend {
 			//for ch := range *pArr {

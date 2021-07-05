@@ -41,15 +41,9 @@ func MakePyrKernel(img gocv.Mat, up bool) image.Point {
 func CalcGaussandLapl(img *gocv.Mat, gauss *gocv.Mat, lapl *gocv.Mat) (err error) {
 	temp := img.Clone()
 
-	//fmt.Println("entered function calcGaussandLapl printing shapes of img, " + fmt.Sprint(img.Size()) + ", gauss: " + fmt.Sprint(gauss.Size()) + ", lapl: " + fmt.Sprint(lapl.Size()))
-
-	//   (img.Rows())/2, (img.Cols())/2
-
 	gocv.PyrDown(*img, gauss, MakePyrKernel(*img, false), gocv.BorderDefault)
 	gocv.PyrUp(*gauss, &temp, image.Pt(gauss.Rows()*2, gauss.Cols()*2), gocv.BorderDefault)
 
-	//fmt.Println("went Pyr up and down shapes of img, " + fmt.Sprint(img.Size()) + ", gauss: " + fmt.Sprint(gauss.Size()) + ", lapl: " + fmt.Sprint(lapl.Size()) + ", temp: " + fmt.Sprint(temp.Size()))
-	//fmt.Println("try to subtract temp, " + fmt.Sprint(temp.Size()) + ", from img: " + fmt.Sprint(img.Size()))
 	gocv.Subtract(*img, temp, lapl)
 	return nil
 }
