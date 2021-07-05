@@ -1,10 +1,32 @@
-package main
+package evm
 
 import (
 	"image"
 
 	"gocv.io/x/gocv"
 )
+
+type VideoProperties struct {
+	fps      int
+	height   int
+	width    int
+	fcount   int
+	channels int
+	isRGB    int
+}
+
+func InitVideoProperties(vid gocv.VideoCapture) VideoProperties {
+	fps := vid.Get(gocv.VideoCaptureFPS)
+	height := vid.Get(gocv.VideoCaptureFrameHeight)
+	width := vid.Get(gocv.VideoCaptureFrameWidth)
+	fcount := vid.Get(gocv.VideoCaptureFrameCount)
+	channels := vid.Get(gocv.VideoCaptureChannel)
+	isRGB := vid.Get(gocv.VideoCaptureConvertRGB)
+
+	Props := VideoProperties{fps: int(fps), height: int(height), width: int(width), fcount: int(fcount), channels: int(channels), isRGB: int(isRGB)}
+
+	return Props
+}
 
 func GetCroppingRect(Props VideoProperties) image.Rectangle {
 	width := 2
@@ -58,38 +80,6 @@ func ImageTo8Int(img gocv.Mat) gocv.Mat {
 	return img
 }
 
-func CreatePyramid(img gocv.Mat, levels int) Pyramid {
-
-	Pyr := make([]gocv.Mat, (levels + 1))
-
-	gaussian_img := gocv.NewMat()
-	defer gaussian_img.Close()
-
-	laplacian_img := gocv.NewMat()
-	defer laplacian_img.Close()
-
-	//fmt.Println(img.Size())
-	//fmt.Println(len(*Pyr))
-
-	for j := range Pyr {
-
-		//fmt.Println("Vorgang nr: " + fmt.Sprint(j))
-
-		CalcGaussandLapl(&img, &gaussian_img, &laplacian_img)
-
-		if j == len(Pyr)-1 {
-			//fmt.Println("entered if")
-			laplacian_img = img.Clone()
-		} else {
-			//fmt.Println("entered else")
-			img = gaussian_img.Clone()
-		}
-
-		(Pyr)[j] = laplacian_img.Clone()
-	}
-	return Pyr
-}
-
 func ReconstructImageFromPyramid(Pyr Pyramid) *gocv.Mat {
 	Result := Pyr[len(Pyr)-1].Clone()
 
@@ -101,9 +91,4 @@ func ReconstructImageFromPyramid(Pyr Pyramid) *gocv.Mat {
 		gocv.Add(Result, Pyr[i], &Result)
 	}
 	return &Result
-}
-
-func CreateImagesFromTimelines(TP [][]TimeLine) []gocv.Mat {
-
-	return nil
 }

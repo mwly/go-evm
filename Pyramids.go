@@ -1,4 +1,4 @@
-package main
+package evm
 
 import (
 	"fmt"
@@ -8,23 +8,55 @@ import (
 
 type Pyramid []gocv.Mat
 
-type PyramidLevel struct {
+type TimePyramidLevel struct {
 	SpacialPictures     []gocv.Mat
 	SpacialPicturesGray [][]gocv.Mat
+}
+
+func CreatePyramid(img gocv.Mat, levels int) Pyramid {
+
+	Pyr := make([]gocv.Mat, (levels + 1))
+
+	gaussian_img := gocv.NewMat()
+	defer gaussian_img.Close()
+
+	laplacian_img := gocv.NewMat()
+	defer laplacian_img.Close()
+
+	//fmt.Println(img.Size())
+	//fmt.Println(len(*Pyr))
+
+	for j := range Pyr {
+
+		//fmt.Println("Vorgang nr: " + fmt.Sprint(j))
+
+		CalcGaussandLapl(&img, &gaussian_img, &laplacian_img)
+
+		if j == len(Pyr)-1 {
+			//fmt.Println("entered if")
+			laplacian_img = img.Clone()
+		} else {
+			//fmt.Println("entered else")
+			img = gaussian_img.Clone()
+		}
+
+		(Pyr)[j] = laplacian_img.Clone()
+	}
+	return Pyr
 }
 
 type TimePyramid struct {
 	//nicht vergessen typ-orientierung zu erwähnen
 
-	Levels   int
-	Frames   int
-	RootRows int
-	RootCols int
-	Level    []PyramidLevel
+	LevelAmount int
+	Frames      int
+	RootRows    int
+	RootCols    int
+	Level       []TimePyramidLevel
 }
 
 func CreateTimePyramid(levels int, frames int, rows int, cols int, chanum int) TimePyramid {
-	PyrLevels := make([]PyramidLevel, levels+1)
+	PyrLevels := make([]TimePyramidLevel, levels+1)
 	for i := range PyrLevels {
 		mat := make([]gocv.Mat, frames)
 		graymat := make([][]gocv.Mat, chanum)
@@ -32,7 +64,7 @@ func CreateTimePyramid(levels int, frames int, rows int, cols int, chanum int) T
 			a_mat := make([]gocv.Mat, frames)
 			graymat[x] = a_mat
 		}
-		PyrLevels[i] = PyramidLevel{mat, graymat}
+		PyrLevels[i] = TimePyramidLevel{mat, graymat}
 	}
 	return TimePyramid{levels, frames, rows, cols, PyrLevels}
 
@@ -46,7 +78,7 @@ func (STP *TimePyramid) AddPyramid(Pyr Pyramid, PiT int) {
 }
 
 func (STP *TimePyramid) GetPyramid(PiT int) Pyramid {
-	Pyr := make([]gocv.Mat, STP.Levels+1)
+	Pyr := make([]gocv.Mat, STP.LevelAmount+1)
 	for i := range Pyr {
 		Pyr[i] = STP.Level[i].SpacialPictures[PiT]
 	}
