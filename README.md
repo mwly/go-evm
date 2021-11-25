@@ -1,8 +1,12 @@
 # go-evm
 
-##Rewriting agenda:
+## Rewriting agenda:
 
-###Data Pipeline:
+### Data Pipeline:
+
+#### The Idea of the following table was to visualize the mutations the videostream will go through
+#### The boolean WG ist set true if the Mutation can't be performed on one element of the previous process.
+#### In other words it has to wait for the that the complete data of previous step is processed.
 
 | data format             | amount to process   | Extract                 | amount to process       |
 | ------------            | ------              | -----------             | ------                  |
